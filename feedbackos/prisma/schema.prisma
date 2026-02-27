@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id         String          @id @default(uuid())
+  name       String
+  clerkOrgId String?         @unique
+  planTier   String          @default("PRO")
+  createdAt  DateTime        @default(now())
+  locations  Location[]
+  insights   InsightRecord[]
+}
+
+model Location {
+  id           String          @id @default(uuid())
+  orgId        String
+  org          Organization    @relation(fields: [orgId], references: [id])
+  name         String
+  locationType String          @default("general")
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  sessions     Session[]
+  insights     InsightRecord[]
+}
+
+model Session {
+  id           String        @id @default(uuid())
+  locationId   String
+  location     Location      @relation(fields: [locationId], references: [id])
+  startedAt    DateTime      @default(now())
+  endedAt      DateTime?
+  source       String        @default("CHAT")
+  isSensitive  Boolean       @default(false)
+  consentGiven Boolean       @default(false)
+  status       String        @default("ACTIVE")
+  messages     Message[]
+  insight      InsightRecord?
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  role       String
+  content    String
+  agentState String?
+  createdAt  DateTime @default(now())
+}
+
+model InsightRecord {
+  id                String       @id @default(uuid())
+  sessionId         String       @unique
+  session           Session      @relation(fields: [sessionId], references: [id])
+  locationId        String
+  location          Location     @relation(fields: [locationId], references: [id])
+  orgId             String
+  org               Organization @relation(fields: [orgId], references: [id])
+  categories        String[]
+  primaryCategory   String
+  sentimentPolarity Float
+  severityScore     Int
+  frequency         String
+  keywords          String[]
+  summary           String
+  actionable        Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+}
